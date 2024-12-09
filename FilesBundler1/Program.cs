@@ -1,13 +1,30 @@
-﻿
-using System.CommandLine;
+﻿using System.CommandLine;
 
-var languageOption = new Option<string[]>("--language", "List of programming languages to include (e.g., 'csharp', 'python') or 'all' for all files."){ IsRequired = true };
-var bundleOption = new Option<FileInfo>("--output", "File path and name for the bundled file") { IsRequired = true };
-var noteOption = new Option<bool>("--note", "Include the source file path as a comment in the bundle");
-var sortOption = new Option<string>("--sort", "Sort files by name (default) or by extension"){ Arity = ArgumentArity.ZeroOrOne,};
+var languageOption = new Option<string[]>(
+    aliases: new[] { "--language", "-l" },
+    description: "List of programming languages to include (e.g., 'csharp', 'python') or 'all' for all files."){ IsRequired = true };
+
+var bundleOption = new Option<FileInfo>(
+    aliases: new[] { "--output", "-o" },
+    description: "File path and name for the bundled file") { IsRequired = true };
+
+var noteOption = new Option<bool>(
+    aliases: new[] { "--note", "-n" },
+    description: "Include the source file path as a comment in the bundle");
+
+var sortOption = new Option<string>(
+    aliases: new[] { "--sort", "-s" },
+    description:"Sort files by name (default) or by extension"){ Arity = ArgumentArity.ZeroOrOne,};
     sortOption.SetDefaultValue("name"); // ערך ברירת מחדל הוא לפי שם הקובץ
-var removeEmptyLinesOption = new Option<bool>("--remove-empty-lines", "Remove empty lines from the code before adding it to the bundle");
-var authorOption = new Option<string>("--author", "Name of the author to include in the bundle file as a comment");
+
+var removeEmptyLinesOption = new Option<bool>(
+    aliases: new[] { "--remove-empty-lines", "-r" },
+    description: "Remove empty lines from the code before adding it to the bundle");
+
+var authorOption = new Option<string>(
+    aliases: new[] { "--author", "-a" },
+    description: "Name of the author to include in the bundle file as a comment");
+
 
 var bundleCommand = new Command("bundle", "Bundle code files to a single file")
 {
@@ -17,7 +34,7 @@ var bundleCommand = new Command("bundle", "Bundle code files to a single file")
     sortOption,
     removeEmptyLinesOption,
     authorOption
-};//bundleCommand.AddOption();
+};
 
 bundleCommand.SetHandler(async (string[] language, FileInfo output, bool note, string sort, bool removeEmptyLines, string author) =>
 {
@@ -52,8 +69,6 @@ bundleCommand.SetHandler(async (string[] language, FileInfo output, bool note, s
                 var extension = Path.GetExtension(file).TrimStart('.').ToLower();
                 return languageList.Contains(extension, StringComparer.OrdinalIgnoreCase);
             }).ToArray();
-
-        // אם לא נמצאו קבצים תואמים, הצגת הודעת שגיאה
         if (!codeFiles.Any())
         {
             Console.WriteLine("No matching code files found.");
@@ -70,7 +85,6 @@ bundleCommand.SetHandler(async (string[] language, FileInfo output, bool note, s
         // כתיבת קובץ הפלט
         using (var outputFile = new StreamWriter(outputFilePath))
         {
-            // רישום שם היוצר אם סופק
             if (!string.IsNullOrEmpty(author))
             {
                 outputFile.WriteLine($"// Author: {author}");
@@ -132,6 +146,15 @@ createRspCommand.SetHandler(async() =>
         Console.WriteLine("Please enter the languages ( 'csharp, python, cs, txt') or 'all' for all files:");
         string languageInput = Console.ReadLine();
 
+        if (string.IsNullOrWhiteSpace(languageInput) ||
+            (!languageInput.Equals("all", StringComparison.OrdinalIgnoreCase) &&
+            !languageInput.Split(',').All(lang => !string.IsNullOrWhiteSpace(lang.Trim()))))
+        {
+            Console.WriteLine("Invalid input for languages. Please enter a valid list of languages or 'all'.");
+            return;
+        }
+
+
         Console.WriteLine("Please enter the output file path (e.g., 'bundle.rsp'):");
         string outputPath = Console.ReadLine();
 
@@ -147,6 +170,11 @@ createRspCommand.SetHandler(async() =>
         Console.WriteLine("How would you like to sort the files? (name/extension, default is 'name'):");
         string sortAnswer = Console.ReadLine();
         if (string.IsNullOrEmpty(sortAnswer)) sortAnswer = "name";  // ברירת מחדל היא לפי שם
+        if (sortAnswer != "name" && sortAnswer != "extension")
+        {
+            Console.WriteLine("Invalid sort option. Please enter 'name' or 'extension'.");
+            return;
+        }
 
         Console.WriteLine("Do you want to remove empty lines from the code? (y/n):");
         bool removeEmptyLinesAnswer = Console.ReadLine()?.ToLower() == "y";
@@ -179,8 +207,8 @@ createRspCommand.SetHandler(async() =>
 
 // יצירת פקודת השורש
 var rootCommand = new RootCommand("Root command for File Bundler CLI"){
-    bundleCommand,
-    createRspCommand
-};//rootCommand.AddCommand();
+bundleCommand,
+createRspCommand
+};
 // הרצת הפקודות
 await rootCommand.InvokeAsync(args);
