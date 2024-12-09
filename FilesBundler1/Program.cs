@@ -1,28 +1,14 @@
 ﻿
-using System;
 using System.CommandLine;
 
-
-// יצירת האפשרות --language
-var languageOption = new Option<string[]>("--language", "List of programming languages to include (e.g., 'csharp', 'python') or 'all' for all files.")
-{
-    IsRequired = true // הפיכת האפשרות לחובה
-};
-
-// יצירת האפשרות --output (נתיב לפלט)
-var bundleOption = new Option<FileInfo>("--output", "File path and name for the bundled file") { IsRequired = true };// הפיכת האפשרות לחובה
-
+var languageOption = new Option<string[]>("--language", "List of programming languages to include (e.g., 'csharp', 'python') or 'all' for all files."){ IsRequired = true };
+var bundleOption = new Option<FileInfo>("--output", "File path and name for the bundled file") { IsRequired = true };
 var noteOption = new Option<bool>("--note", "Include the source file path as a comment in the bundle");
-var sortOption = new Option<string>("--sort", "Sort files by name (default) or by extension")
-{
-    Arity = ArgumentArity.ZeroOrOne,
-};
-sortOption.SetDefaultValue("name"); // ערך ברירת מחדל הוא לפי שם הקובץ
-
+var sortOption = new Option<string>("--sort", "Sort files by name (default) or by extension"){ Arity = ArgumentArity.ZeroOrOne,};
+    sortOption.SetDefaultValue("name"); // ערך ברירת מחדל הוא לפי שם הקובץ
 var removeEmptyLinesOption = new Option<bool>("--remove-empty-lines", "Remove empty lines from the code before adding it to the bundle");
 var authorOption = new Option<string>("--author", "Name of the author to include in the bundle file as a comment");
 
-// יצירת פקודת bundle
 var bundleCommand = new Command("bundle", "Bundle code files to a single file")
 {
     languageOption,
@@ -33,7 +19,6 @@ var bundleCommand = new Command("bundle", "Bundle code files to a single file")
     authorOption
 };//bundleCommand.AddOption();
 
-// טיפול בפקודה
 bundleCommand.SetHandler(async (string[] language, FileInfo output, bool note, string sort, bool removeEmptyLines, string author) =>
 {
     try
@@ -48,9 +33,6 @@ bundleCommand.SetHandler(async (string[] language, FileInfo output, bool note, s
         {
             throw new DirectoryNotFoundException("The specified directory does not exist.");
         }
-
-
-
 
         // קריאת כל הקבצים בתיקיה הנוכחית
         var currentDirectory = Directory.GetCurrentDirectory();
@@ -84,9 +66,6 @@ bundleCommand.SetHandler(async (string[] language, FileInfo output, bool note, s
             "extension" => codeFiles.OrderBy(file => Path.GetExtension(file)).ToArray(),
             _ => codeFiles.OrderBy(file => Path.GetFileName(file)).ToArray()
         };
-
-
-
 
         // כתיבת קובץ הפלט
         using (var outputFile = new StreamWriter(outputFilePath))
@@ -141,9 +120,67 @@ bundleCommand.SetHandler(async (string[] language, FileInfo output, bool note, s
     await Task.CompletedTask;
 }, languageOption, bundleOption, noteOption, sortOption, removeEmptyLinesOption, authorOption);
 
+
+// יצירת פקודת create-rsp (ליצירת קובץ תגובה)
+var createRspCommand = new Command("create-rsp", "Create a response file with pre-defined options for bundle command");//"יצירת קובץ תגובה עם אפשרויות קבועות לפקודת bundle"
+                                                                                                                      
+createRspCommand.SetHandler(async() =>
+{
+    try
+    {
+        // שאלות למשתמש
+        Console.WriteLine("Please enter the languages ( 'csharp, python, cs, txt') or 'all' for all files:");
+        string languageInput = Console.ReadLine();
+
+        Console.WriteLine("Please enter the output file path (e.g., 'bundle.rsp'):");
+        string outputPath = Console.ReadLine();
+
+        // אם המשתמש לא סיפק נתיב, השתמש בנתיב ברירת מחדל
+        if (string.IsNullOrEmpty(outputPath))
+        {
+            outputPath = "bundle.rsp";
+        }
+
+        Console.WriteLine("Do you want to include the source file path as a comment? (y/n):");
+        bool noteAnswer = Console.ReadLine()?.ToLower() == "y";
+
+        Console.WriteLine("How would you like to sort the files? (name/extension, default is 'name'):");
+        string sortAnswer = Console.ReadLine();
+        if (string.IsNullOrEmpty(sortAnswer)) sortAnswer = "name";  // ברירת מחדל היא לפי שם
+
+        Console.WriteLine("Do you want to remove empty lines from the code? (y/n):");
+        bool removeEmptyLinesAnswer = Console.ReadLine()?.ToLower() == "y";
+
+        Console.WriteLine("Enter the author's name (optional):");
+        string authorName = Console.ReadLine();
+
+        // עכשיו ייצור את קובץ ה-RSP עם הערכים שהוזנו
+        using (var rspFile = new StreamWriter(outputPath))
+        {
+            rspFile.WriteLine($"--language {languageInput}");
+            rspFile.WriteLine($"--output {outputPath}");
+            if (noteAnswer)
+                rspFile.WriteLine("--note");
+            if (!string.IsNullOrEmpty(sortAnswer))
+                rspFile.WriteLine($"--sort {sortAnswer}");
+            if (removeEmptyLinesAnswer)
+                rspFile.WriteLine("--remove-empty-lines");
+            if (!string.IsNullOrEmpty(authorName))
+                rspFile.WriteLine($"--author {authorName}");
+        }
+
+        Console.WriteLine($"Response file created successfully at {outputPath}. You can now run `bundle` with this file.");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Error: {ex.Message}");
+    }
+});
+
 // יצירת פקודת השורש
 var rootCommand = new RootCommand("Root command for File Bundler CLI"){
-    bundleCommand
-};//rootCommand.AddCommand(bundleCommand);
+    bundleCommand,
+    createRspCommand
+};//rootCommand.AddCommand();
 // הרצת הפקודות
 await rootCommand.InvokeAsync(args);
