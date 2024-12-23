@@ -75,7 +75,7 @@ bundleCommand.SetHandler(async (string[] language, FileInfo output, bool note, s
             return;
         }
 
-        // מיון הקבצים לפי האפשרות שנבחרה
+        // sort files by the option
         codeFiles = sort.ToLower() switch
         {
             "extension" => codeFiles.OrderBy(file => Path.GetExtension(file)).ToArray(),
@@ -104,7 +104,6 @@ bundleCommand.SetHandler(async (string[] language, FileInfo output, bool note, s
                 // קריאה לתוכן הקובץ
                 string fileContent = File.ReadAllText(file);
 
-                // הסרת שורות ריקות אם האפשרות נבחרה
                 if (removeEmptyLines)
                 {
                     fileContent = string.Join("\n", fileContent
@@ -135,7 +134,7 @@ bundleCommand.SetHandler(async (string[] language, FileInfo output, bool note, s
 }, languageOption, bundleOption, noteOption, sortOption, removeEmptyLinesOption, authorOption);
 
 
-// יצירת פקודת create-rsp (ליצירת קובץ תגובה)
+//create command 'create-rsp' (to create rsp file)
 var createRspCommand = new Command("create-rsp", "Create a response file with pre-defined options for bundle command");//"יצירת קובץ תגובה עם אפשרויות קבועות לפקודת bundle"
                                                                                                                       
 createRspCommand.SetHandler(async() =>
@@ -205,10 +204,26 @@ createRspCommand.SetHandler(async() =>
     }
 });
 
-// יצירת פקודת השורש
+// create root-command with the new commands
 var rootCommand = new RootCommand("Root command for File Bundler CLI"){
 bundleCommand,
 createRspCommand
 };
-// הרצת הפקודות
+// run commands
 await rootCommand.InvokeAsync(args);
+
+/*
+==Run project==:
+After every change write in-
+Developer PowerShell Visual Studio Community 2022:
+PS C:\Users\The user\Source\Repos\FilesBundlerCLI> dotnet publish -o publish
+
+Then open cmd and write the command like:
+C:\Shoshi>fb bundle --language "csharp" --output "bundle.txt" --note --sort "name" --remove-empty-lines --author "Avi"
+or like:
+C:\Shoshi>fb bundle -l "cs,csharp" -o "bundle.txt" -n -s "name" -r -a "Shoshi"
+
+To run the second command write:
+C:\Shoshi>fb create-rsp
+C:\Shoshi>fb bundle @bundle.rsp
+*/
