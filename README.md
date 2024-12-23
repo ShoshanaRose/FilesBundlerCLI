@@ -28,3 +28,6 @@ Files are written to the output file in the selected order (by name or extension
 3. Error Handling:
 The tool checks if the output file path is valid.
 It handles errors such as missing files, read/write issues, or invalid paths.
+4. Response File (create-rsp):
+Use create-rsp to generate a response file with predefined options for the bundle command.
+Run the bundle command with the response file for convenience:
